@@ -5,6 +5,10 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <fstream>
+#include <string>
+#include <cstring>
+#include <dirent.h>
 
 #include "led_controller.h"
 #include "bandwidth_monitor.h"
@@ -23,6 +27,88 @@ void setup_signal_handlers() {
     signal(SIGINT, signal_handler);
     signal(SIGTERM, signal_handler);
     signal(SIGHUP, signal_handler);
+}
+
+bool is_already_running(bool debug = false) {
+    // Get current process ID
+    pid_t current_pid = getpid();
+    
+    // Open /proc directory
+    DIR* proc_dir = opendir("/proc");
+    if (!proc_dir) {
+        return false; // If we can't check, assume it's safe to run
+    }
+    
+    struct dirent* entry;
+    std::string target_name = "ugreen_leds_ethutild";
+    
+    while ((entry = readdir(proc_dir)) != nullptr) {
+        // Skip non-numeric directory names (only process IDs are numeric)
+        if (!isdigit(entry->d_name[0])) {
+            continue;
+        }
+        
+        pid_t pid = atoi(entry->d_name);
+        if (pid == current_pid || pid <= 0) {
+            continue; // Skip our own process and invalid PIDs
+        }
+        
+        // First check the comm file (process name)
+        std::string comm_path = "/proc/" + std::string(entry->d_name) + "/comm";
+        std::ifstream comm_file(comm_path);
+        
+        if (comm_file.is_open()) {
+            std::string comm;
+            std::getline(comm_file, comm);
+            comm_file.close();
+            
+            // Remove any trailing newline
+            if (!comm.empty() && comm.back() == '\n') {
+                comm.pop_back();
+            }
+            
+            // Check if this process has our exact name
+            if (comm == target_name) {
+                if (debug) {
+                    std::cerr << "Found running instance via comm: PID " << pid << " (" << comm << ")" << std::endl;
+                }
+                closedir(proc_dir);
+                return true; // Found another instance
+            }
+        }
+        
+        // Also check cmdline as fallback (for cases where comm is truncated)
+        std::string cmdline_path = "/proc/" + std::string(entry->d_name) + "/cmdline";
+        std::ifstream cmdline_file(cmdline_path);
+        
+        if (cmdline_file.is_open()) {
+            std::string cmdline;
+            std::getline(cmdline_file, cmdline);
+            cmdline_file.close();
+            
+            // cmdline uses null bytes as separators, get first argument (executable path)
+            size_t first_null = cmdline.find('\0');
+            std::string executable = (first_null != std::string::npos) ?
+                                   cmdline.substr(0, first_null) : cmdline;
+            
+            // Extract just the filename from the path
+            size_t last_slash = executable.find_last_of('/');
+            std::string exe_name = (last_slash != std::string::npos) ?
+                                 executable.substr(last_slash + 1) : executable;
+            
+            // Check if the executable name matches exactly
+            if (exe_name == target_name) {
+                if (debug) {
+                    std::cerr << "Found running instance via cmdline: PID " << pid << " (" << exe_name << ")" << std::endl;
+                }
+                closedir(proc_dir);
+                return true; // Found another instance
+            }
+        }
+    }
+    
+    closedir(proc_dir);
+    return false; // No other instances found
 }
 
 void setup_logging(const std::string& log_level, bool console_mode = false) {
@@ -171,6 +257,14 @@ bool run_normal_mode(bandwidth_monitor_t& bandwidth_monitor, led_state_manager_t
 }
 
 int main(int argc, char* argv[]) {
+    // Check if another instance is already running
+    if (is_already_running()) {
+        std::cerr << "Error: Another instance of ugreen_leds_ethutild is already running." << std::endl;
+        std::cerr << "Only one instance is allowed to prevent conflicts." << std::endl;
+        std::cerr << "Please stop the existing instance before starting a new one." << std::endl;
+        return 1;
+    }
+    
     bool test_mode = false;
     
     // Parse command line arguments
