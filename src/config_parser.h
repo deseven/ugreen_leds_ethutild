@@ -11,15 +11,21 @@ struct ledctl_config_t {
     
     // LED settings
     uint8_t brightness;
+    uint8_t low_threshold;
+    uint8_t medium_threshold;
+    uint8_t high_threshold;
     
     // Logging settings
     std::string log_level;
     
     // Default values
-    ledctl_config_t() 
+    ledctl_config_t()
         : interface("eth0")
         , capacity_mbps(2000)  // 1Gbps full duplex
         , brightness(255)
+        , low_threshold(10)
+        , medium_threshold(40)
+        , high_threshold(80)
         , log_level("info")
     {}
 };

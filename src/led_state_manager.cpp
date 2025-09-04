@@ -2,8 +2,10 @@
 #include <syslog.h>
 #include <unistd.h>
 
-led_state_manager_t::led_state_manager_t(led_controller_t& led_controller, uint8_t brightness)
-    : _led_controller(led_controller), _current_state(led_state_t::UTILIZATION_OFF), _brightness(brightness) {
+led_state_manager_t::led_state_manager_t(led_controller_t& led_controller, const ledctl_config_t& config)
+    : _led_controller(led_controller), _current_state(led_state_t::UTILIZATION_OFF),
+      _brightness(config.brightness), _low_threshold(config.low_threshold),
+      _medium_threshold(config.medium_threshold), _high_threshold(config.high_threshold) {
 }
 
 bool led_state_manager_t::update_leds(const bandwidth_info_t& bandwidth_info) {
@@ -41,11 +43,11 @@ bool led_state_manager_t::set_state(led_state_t state) {
 }
 
 led_state_t led_state_manager_t::determine_state_from_usage(double usage_percentage) {
-    if (usage_percentage < 10.0) {
+    if (usage_percentage < _low_threshold) {
         return led_state_t::UTILIZATION_OFF;
-    } else if (usage_percentage < 40.0) {
+    } else if (usage_percentage < _medium_threshold) {
         return led_state_t::NETDEV_GREEN;
-    } else if (usage_percentage < 80.0) {
+    } else if (usage_percentage < _high_threshold) {
         return led_state_t::NETDEV_DISK1_BLUE;
     } else {
         return led_state_t::ALL_UTILIZATION_RED;

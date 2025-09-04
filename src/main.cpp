@@ -215,8 +215,9 @@ int main(int argc, char* argv[]) {
     setup_logging(config.log_level, console_mode);
     setup_signal_handlers();
     
-    syslog(LOG_INFO, "LED Control Service starting (interface: %s, capacity: %u Mbps, brightness: %u)",
-           config.interface.c_str(), config.capacity_mbps, config.brightness);
+    syslog(LOG_INFO, "LED Control Service starting (interface: %s, capacity: %u Mbps, brightness: %u, thresholds: %u/%u/%u%%)",
+           config.interface.c_str(), config.capacity_mbps, config.brightness,
+           config.low_threshold, config.medium_threshold, config.high_threshold);
     
     // Initialize LED controller
     led_controller_t led_controller;
@@ -231,7 +232,7 @@ int main(int argc, char* argv[]) {
     }
     
     // Initialize LED state manager
-    led_state_manager_t state_manager(led_controller, config.brightness);
+    led_state_manager_t state_manager(led_controller, config);
     
     // Set initial state (power LED on, utilization LEDs off)
     state_manager.set_state(led_state_t::UTILIZATION_OFF);

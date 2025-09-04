@@ -13,10 +13,12 @@ The service controls LEDs based on bandwidth utilization percentage:
 
 | Usage Range | Utilization LEDs Active | Color | Description |
 |-------------|-------------------------|-------|-------------|
-| 0-10% | None | Off | Low utilization |
-| 10-40% | NetDev | Green | Moderate utilization |
-| 40-80% | NetDev + Disk1 | Blue | High utilization |
-| 80%+ | NetDev + Disk1 + Disk2 | Red | Very high utilization |
+| 0-low_threshold% | None | Off | Low utilization |
+| low_threshold-medium_threshold% | NetDev | Green | Moderate utilization |
+| medium_threshold-high_threshold% | NetDev + Disk1 | Blue | High utilization |
+| high_threshold%+ | NetDev + Disk1 + Disk2 | Red | Very high utilization |
+
+*Default thresholds: 10%, 40%, 80% (configurable via config file)*
 
 
 ## Requirements
@@ -51,12 +53,21 @@ The service looks for configuration files in this order:
 2. `/etc/ugreen_leds_ethutild.conf` (system-wide)
 
 Current config options:
+
+**Network settings:**
 - **interface**: Network interface to monitor (e.g., `eth0`, `enp2s0`)
 - **capacity_mbps**: Total link capacity in Mbps (full duplex)
   - 1Gbps full duplex = 2000 Mbps
   - 10Gbps full duplex = 20000 Mbps
   - you can also define total bandwidth as max throughput of your disks
+
+**LED settings:**
 - **brightness**: LED brightness (0-255)
+- **low_threshold**: Percentage threshold for low utilization (default: 10)
+- **medium_threshold**: Percentage threshold for medium utilization (default: 40)
+- **high_threshold**: Percentage threshold for high utilization (default: 80)
+
+**Logging settings:**
 - **level**: Log level (`debug`, `info`, `warning`, `error`)
 
 

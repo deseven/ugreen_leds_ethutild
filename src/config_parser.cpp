@@ -62,6 +62,49 @@ bool config_parser_t::load_config_from_file(const std::string& filename, ledctl_
         }
     }
     
+    // Parse threshold settings
+    std::string low_threshold_str = get_value("leds", "low_threshold");
+    if (!low_threshold_str.empty()) {
+        try {
+            int threshold = std::stoi(low_threshold_str);
+            if (threshold >= 0 && threshold <= 100) {
+                config.low_threshold = static_cast<uint8_t>(threshold);
+            } else {
+                syslog(LOG_WARNING, "Low threshold value out of range (0-100): %d, using default", threshold);
+            }
+        } catch (const std::exception& e) {
+            syslog(LOG_WARNING, "Invalid low_threshold value: %s, using default", low_threshold_str.c_str());
+        }
+    }
+    
+    std::string medium_threshold_str = get_value("leds", "medium_threshold");
+    if (!medium_threshold_str.empty()) {
+        try {
+            int threshold = std::stoi(medium_threshold_str);
+            if (threshold >= 0 && threshold <= 100) {
+                config.medium_threshold = static_cast<uint8_t>(threshold);
+            } else {
+                syslog(LOG_WARNING, "Medium threshold value out of range (0-100): %d, using default", threshold);
+            }
+        } catch (const std::exception& e) {
+            syslog(LOG_WARNING, "Invalid medium_threshold value: %s, using default", medium_threshold_str.c_str());
+        }
+    }
+    
+    std::string high_threshold_str = get_value("leds", "high_threshold");
+    if (!high_threshold_str.empty()) {
+        try {
+            int threshold = std::stoi(high_threshold_str);
+            if (threshold >= 0 && threshold <= 100) {
+                config.high_threshold = static_cast<uint8_t>(threshold);
+            } else {
+                syslog(LOG_WARNING, "High threshold value out of range (0-100): %d, using default", threshold);
+            }
+        } catch (const std::exception& e) {
+            syslog(LOG_WARNING, "Invalid high_threshold value: %s, using default", high_threshold_str.c_str());
+        }
+    }
+    
     // Parse logging settings
     std::string log_level = get_value("logging", "level", config.log_level);
     if (!log_level.empty()) {
@@ -147,7 +190,10 @@ bool config_parser_t::create_example_config(const std::string& filename) {
     file << "capacity_mbps = 2000\n\n";
     
     file << "[leds]\n";
-    file << "brightness = 255\n\n";
+    file << "brightness = 255\n";
+    file << "low_threshold = 10\n";
+    file << "medium_threshold = 40\n";
+    file << "high_threshold = 80\n\n";
     
     file << "[logging]\n";
     file << "level = info\n";
