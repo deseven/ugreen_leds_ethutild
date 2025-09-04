@@ -34,7 +34,8 @@ The service controls LEDs based on bandwidth utilization percentage:
 ## Installation
 
 ```bash
-git clone ...
+git clone https://github.com/deseven/ugreen_leds_ethutild.git
+cd ugreen_leds_ethutild
 make
 sudo make install
 ```
